@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios"; // Importamos Axios para hacer solicitudes HTTP
-import Select from "react-select"; // Importamos React Select
+import axios from "axios";  // Importamos Axios para hacer solicitudes HTTP
+import Select from "react-select";  // Importamos React Select
 import {
   LineChart,
   Line,
@@ -11,14 +11,48 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Lista de activos disponibles para sugerir (puedes ampliarla más)
-const activosDisponibles = [
-  { value: 'bitcoin', label: 'Bitcoin (BTC)' },
-  { value: 'ethereum', label: 'Ethereum (ETH)' },
-  { value: 'aapl', label: 'Apple (AAPL)' },
-  { value: 'msft', label: 'Microsoft (MSFT)' },
-  // Aquí puedes seguir añadiendo activos que quieras sugerir
-];
+// Lista de activos disponibles para sugerir (podemos ampliarla con más criptos y acciones)
+const [activosDisponibles, setActivosDisponibles] = useState([]);
+
+useEffect(() => {
+  const fetchActivos = async () => {
+    try {
+      // Obtener las 100 principales criptomonedas de CoinGecko
+      const cryptosResponse = await axios.get(
+        "https://api.coingecko.com/api/v3/coins/markets", 
+        {
+          params: {
+            vs_currency: "eur",
+            order: "market_cap_desc",
+            per_page: 100,
+            page: 1,
+          }
+        }
+      );
+
+      const cryptos = cryptosResponse.data.map(crypto => ({
+        value: crypto.id,
+        label: `${crypto.name} (${crypto.symbol.toUpperCase()})`,
+      }));
+
+      // Obtener las 500 principales empresas de Alpha Vantage
+      const apiKey = 'E4OBOBOW3O2MLDYI'; // Pon tu clave de API de Alpha Vantage aquí
+      const companiesResponse = await axios.get(
+        `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=&apikey=${apiKey}`
+      );
+      const companies = companiesResponse.data.bestMatches.map((company) => ({
+        value: company['1. symbol'],
+        label: `${company['1. symbol']} - ${company['2. name']}`,
+      }));
+
+      setActivosDisponibles([...cryptos, ...companies]);
+    } catch (error) {
+      console.error("Error al obtener los activos:", error);
+    }
+  };
+
+  fetchActivos();
+}, []); // Este efecto se ejecuta una sola vez al cargar la app
 
 function App() {
   const [inversiones, setInversiones] = useState([]);
@@ -27,20 +61,19 @@ function App() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioReal, setPrecioReal] = useState(null);
   const [historial, setHistorial] = useState([]);
-  const [precio, setPrecio] = useState("");
 
   // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
+    if (!activo || !cantidad || !precioCompra || !precioReal) return;
 
     const nuevaInversion = {
       id: Date.now(),
       activo,
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
-      precioActual: precioReal, // Usamos el precio en tiempo real
+      precioActual: precioReal,
     };
 
     setInversiones([nuevaInversion, ...inversiones]);
@@ -139,15 +172,6 @@ function App() {
             placeholder="Selecciona un activo"
             className="border rounded-lg px-3 py-2"
             isClearable
-            isSearchable
-            noOptionsMessage={() => "Activo no encontrado, ingresa uno manualmente"}
-          />
-          <input
-            type="text"
-            placeholder="Si el activo no aparece, ingrésalo manualmente"
-            value={activo}
-            onChange={(e) => setActivo(e.target.value)}
-            className="border rounded-lg px-3 py-2"
           />
           <input
             type="number"
@@ -208,9 +232,7 @@ function App() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-500">
-              Aún no hay suficientes datos para mostrar la gráfica.
-            </p>
+            <p className="text-gray-500">Aún no hay suficientes datos para mostrar la gráfica.</p>
           )}
         </div>
 
@@ -237,17 +259,13 @@ function App() {
                   {valorActual.toFixed(2)} €
                   <br />
                   Proporción: {porcentaje}% |{" "}
-                  <span
-                    className={ganancia >= 0 ? "text-green-600" : "text-red-600"}
-                  >
+                  <span className={ganancia >= 0 ? "text-green-600" : "text-red-600"}>
                     {ganancia >= 0 ? "↑" : "↓"} {ganancia.toFixed(2)} €
                   </span>
                 </li>
               );
             })}
-            {inversiones.length === 0 && (
-              <li className="text-gray-500">No hay inversiones registradas.</li>
-            )}
+            {inversiones.length === 0 && <li className="text-gray-500">No hay inversiones registradas.</li>}
           </ul>
         </div>
       </div>
