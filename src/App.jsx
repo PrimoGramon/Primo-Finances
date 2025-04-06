@@ -11,7 +11,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Lista de activos disponibles para sugerir (podemos ampliarla con más criptos y acciones)
+// Lista de activos disponibles para sugerir (inicialmente vacía, se llenará más tarde)
 const [activosDisponibles, setActivosDisponibles] = useState([]);
 
 useEffect(() => {
@@ -255,8 +255,7 @@ function App() {
                 <li key={inv.id} className="border-b pb-2">
                   <strong>{inv.activo}</strong> — {inv.cantidad} unidades
                   <br />
-                  Invertido: {invertido.toFixed(2)} € | Valor Actual:{" "}
-                  {valorActual.toFixed(2)} €
+                  Invertido: {invertido.toFixed(2)} € | Valor Actual: {valorActual.toFixed(2)} €
                   <br />
                   Proporción: {porcentaje}% |{" "}
                   <span className={ganancia >= 0 ? "text-green-600" : "text-red-600"}>
