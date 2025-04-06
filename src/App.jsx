@@ -11,13 +11,13 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Lista de activos disponibles para sugerir (inicialmente vacía)
+// Lista de activos disponibles para sugerir (puedes ampliarla más)
 const activosDisponibles = [
   { value: 'bitcoin', label: 'Bitcoin (BTC)' },
   { value: 'ethereum', label: 'Ethereum (ETH)' },
   { value: 'aapl', label: 'Apple (AAPL)' },
   { value: 'msft', label: 'Microsoft (MSFT)' },
-  // Puedes añadir más activos aquí
+  // Puedes añadir más activos aquí si lo deseas
 ];
 
 function App() {
@@ -27,16 +27,21 @@ function App() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioReal, setPrecioReal] = useState(null);
   const [historial, setHistorial] = useState([]);
+  
+  // Estado para el precio en tiempo real
+  const [precio, setPrecio] = useState("");
+  const [activoManual, setActivoManual] = useState(""); // Estado para permitir activos manuales
 
   // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
+    if (!activo && !activoManual) return; // Debemos tener un activo, sea desde la búsqueda o manual
+    if (!cantidad || !precioCompra || !precioReal) return;
 
     const nuevaInversion = {
       id: Date.now(),
-      activo,
+      activo: activoManual || activo, // Usamos el activo manual si lo hay
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
       precioActual: precioReal, // Usamos el precio en tiempo real
@@ -45,9 +50,10 @@ function App() {
     setInversiones([nuevaInversion, ...inversiones]);
 
     setActivo("");
+    setActivoManual("");
     setCantidad("");
     setPrecioCompra("");
-    setPrecioReal("");
+    setPrecioReal(null);
   };
 
   const totalInvertido = inversiones.reduce(
@@ -62,7 +68,7 @@ function App() {
 
   // Hook para obtener el precio en tiempo real del activo
   useEffect(() => {
-    if (!activo) return;
+    if (!activo && !activoManual) return; // Si no tenemos activo, no hacemos nada
 
     const obtenerPrecio = async () => {
       try {
@@ -99,7 +105,7 @@ function App() {
 
     const intervalo = setInterval(obtenerPrecio, 60000);
     return () => clearInterval(intervalo);
-  }, [activo]);
+  }, [activo, activoManual]); // Se ejecuta cada vez que cambia el activo seleccionado
 
   // Función para exportar a CSV
   const exportarCSV = () => {
@@ -131,13 +137,21 @@ function App() {
         <h1 className="text-2xl font-bold mb-4 text-center">Cartera de Inversiones</h1>
 
         <form onSubmit={registrarInversion} className="flex flex-col gap-4 mb-6">
+          {/* Búsqueda dinámica para activos */}
           <Select
             options={activosDisponibles}
             value={activosDisponibles.find(option => option.value === activo)}
             onChange={(selectedOption) => setActivo(selectedOption?.value)}
             placeholder="Selecciona un activo"
             className="border rounded-lg px-3 py-2"
-            isClearable
+          />
+          {/* Campo de texto para ingresar manualmente el activo si no está listado */}
+          <input
+            type="text"
+            placeholder="O ingresa un activo manualmente"
+            value={activoManual}
+            onChange={(e) => setActivoManual(e.target.value)}
+            className="border rounded-lg px-3 py-2"
           />
           <input
             type="number"
@@ -198,7 +212,9 @@ function App() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-500">Aún no hay suficientes datos para mostrar la gráfica.</p>
+            <p className="text-gray-500">
+              Aún no hay suficientes datos para mostrar la gráfica.
+            </p>
           )}
         </div>
 
@@ -221,16 +237,21 @@ function App() {
                 <li key={inv.id} className="border-b pb-2">
                   <strong>{inv.activo}</strong> — {inv.cantidad} unidades
                   <br />
-                  Invertido: {invertido.toFixed(2)} € | Valor Actual: {valorActual.toFixed(2)} €
+                  Invertido: {invertido.toFixed(2)} € | Valor Actual:{" "}
+                  {valorActual.toFixed(2)} €
                   <br />
                   Proporción: {porcentaje}% |{" "}
-                  <span className={ganancia >= 0 ? "text-green-600" : "text-red-600"}>
+                  <span
+                    className={ganancia >= 0 ? "text-green-600" : "text-red-600"}
+                  >
                     {ganancia >= 0 ? "↑" : "↓"} {ganancia.toFixed(2)} €
                   </span>
                 </li>
               );
             })}
-            {inversiones.length === 0 && <li className="text-gray-500">No hay inversiones registradas.</li>}
+            {inversiones.length === 0 && (
+              <li className="text-gray-500">No hay inversiones registradas.</li>
+            )}
           </ul>
         </div>
       </div>
