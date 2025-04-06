@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";  // Importamos Axios para hacer solicitudes HTTP
-import Select from "react-select";  // Importamos React Select
+import axios from "axios"; // Importamos Axios para hacer solicitudes HTTP
+import Select from "react-select"; // Importamos React Select
 import {
   LineChart,
   Line,
@@ -17,7 +17,7 @@ const activosDisponibles = [
   { value: 'ethereum', label: 'Ethereum (ETH)' },
   { value: 'aapl', label: 'Apple (AAPL)' },
   { value: 'msft', label: 'Microsoft (MSFT)' },
-  // Puedes añadir más activos aquí si lo deseas
+  // Aquí puedes seguir añadiendo activos que quieras sugerir
 ];
 
 function App() {
@@ -27,21 +27,17 @@ function App() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioReal, setPrecioReal] = useState(null);
   const [historial, setHistorial] = useState([]);
-  
-  // Estado para el precio en tiempo real
   const [precio, setPrecio] = useState("");
-  const [activoManual, setActivoManual] = useState(""); // Estado para permitir activos manuales
 
   // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo && !activoManual) return; // Debemos tener un activo, sea desde la búsqueda o manual
-    if (!cantidad || !precioCompra || !precioReal) return;
+    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
 
     const nuevaInversion = {
       id: Date.now(),
-      activo: activoManual || activo, // Usamos el activo manual si lo hay
+      activo,
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
       precioActual: precioReal, // Usamos el precio en tiempo real
@@ -50,10 +46,9 @@ function App() {
     setInversiones([nuevaInversion, ...inversiones]);
 
     setActivo("");
-    setActivoManual("");
     setCantidad("");
     setPrecioCompra("");
-    setPrecioReal(null);
+    setPrecioReal("");
   };
 
   const totalInvertido = inversiones.reduce(
@@ -68,7 +63,7 @@ function App() {
 
   // Hook para obtener el precio en tiempo real del activo
   useEffect(() => {
-    if (!activo && !activoManual) return; // Si no tenemos activo, no hacemos nada
+    if (!activo) return;
 
     const obtenerPrecio = async () => {
       try {
@@ -105,7 +100,7 @@ function App() {
 
     const intervalo = setInterval(obtenerPrecio, 60000);
     return () => clearInterval(intervalo);
-  }, [activo, activoManual]); // Se ejecuta cada vez que cambia el activo seleccionado
+  }, [activo]);
 
   // Función para exportar a CSV
   const exportarCSV = () => {
@@ -137,20 +132,21 @@ function App() {
         <h1 className="text-2xl font-bold mb-4 text-center">Cartera de Inversiones</h1>
 
         <form onSubmit={registrarInversion} className="flex flex-col gap-4 mb-6">
-          {/* Búsqueda dinámica para activos */}
           <Select
             options={activosDisponibles}
             value={activosDisponibles.find(option => option.value === activo)}
             onChange={(selectedOption) => setActivo(selectedOption?.value)}
             placeholder="Selecciona un activo"
             className="border rounded-lg px-3 py-2"
+            isClearable
+            isSearchable
+            noOptionsMessage={() => "Activo no encontrado, ingresa uno manualmente"}
           />
-          {/* Campo de texto para ingresar manualmente el activo si no está listado */}
           <input
             type="text"
-            placeholder="O ingresa un activo manualmente"
-            value={activoManual}
-            onChange={(e) => setActivoManual(e.target.value)}
+            placeholder="Si el activo no aparece, ingrésalo manualmente"
+            value={activo}
+            onChange={(e) => setActivo(e.target.value)}
             className="border rounded-lg px-3 py-2"
           />
           <input
