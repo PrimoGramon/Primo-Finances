@@ -1,6 +1,7 @@
 // src/App.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";  // Importamos Axios para hacer solicitudes HTTP
+import Select from "react-select";  // Importamos React Select
 import {
   LineChart,
   Line,
@@ -11,29 +12,37 @@ import {
   CartesianGrid,
 } from "recharts";
 
+// Lista de activos disponibles para sugerir (puedes ampliarla más)
+const activosDisponibles = [
+  { value: 'bitcoin', label: 'Bitcoin (BTC)' },
+  { value: 'ethereum', label: 'Ethereum (ETH)' },
+  { value: 'aapl', label: 'Apple (AAPL)' },
+  { value: 'msft', label: 'Microsoft (MSFT)' },
+  // Añadir más activos aquí
+];
+
 function App() {
   const [inversiones, setInversiones] = useState([]);
-  const [activo, setActivo] = useState("");
+  const [activo, setActivo] = useState(""); // Cambiado para usar 'value' de react-select
   const [cantidad, setCantidad] = useState("");
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioActual, setPrecioActual] = useState("");
   const [historial, setHistorial] = useState([]);
   
-  // Estado para el precio en tiempo real
   const [precioReal, setPrecioReal] = useState(null);
 
   // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
+    if (!activo || !cantidad || !precioCompra || !precioReal) return;
 
     const nuevaInversion = {
       id: Date.now(),
       activo,
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
-      precioActual: precioReal, // Usamos el precio en tiempo real
+      precioActual: precioReal,
     };
 
     setInversiones([nuevaInversion, ...inversiones]);
@@ -61,15 +70,12 @@ function App() {
     const obtenerPrecio = async () => {
       try {
         // Si el activo es una criptomoneda, usamos CoinGecko
-        if (activo.toLowerCase() === 'bitcoin' || activo.toLowerCase() === 'ethereum') {
+        if (activo === 'bitcoin' || activo === 'ethereum') {
           const response = await axios.get(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${activo.toLowerCase()}&vs_currencies=eur`
+            `https://api.coingecko.com/api/v3/simple/price?ids=${activo}&vs_currencies=eur`
           );
-          if (response.data[activo.toLowerCase()]) {
-            setPrecioReal(response.data[activo.toLowerCase()].eur);
-          } else {
-            setPrecioReal(null);
-            alert(`No se encontró el precio para la criptomoneda ${activo}`);
+          if (response.data[activo]) {
+            setPrecioReal(response.data[activo].eur);
           }
         }
         // Si el activo es una acción, usamos Alpha Vantage
@@ -83,26 +89,19 @@ function App() {
             const latestTime = Object.keys(data)[0];
             const latestClose = data[latestTime]['4. close'];
             setPrecioReal(parseFloat(latestClose));
-          } else {
-            setPrecioReal(null);
-            alert(`No se encontró el precio para la acción/fondo ${activo}`);
           }
         }
       } catch (error) {
         console.error("Error al obtener el precio real:", error);
-        setPrecioReal(null);
-        alert("Hubo un problema al obtener el precio del activo.");
       }
     };
 
     obtenerPrecio();
 
-    // Actualizar cada 60 segundos
     const intervalo = setInterval(obtenerPrecio, 60000);
-    return () => clearInterval(intervalo); // Limpiamos el intervalo al desmontar el componente
-  }, [activo]); // Solo se ejecuta cuando cambia el activo
+    return () => clearInterval(intervalo);
+  }, [activo]);
 
-  // Función para exportar a CSV
   const exportarCSV = () => {
     const headers = ["Activo", "Cantidad", "PrecioCompra", "PrecioActual"];
     const rows = inversiones.map((inv) => [
@@ -132,11 +131,11 @@ function App() {
         <h1 className="text-2xl font-bold mb-4 text-center">Cartera de Inversiones</h1>
 
         <form onSubmit={registrarInversion} className="flex flex-col gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="Activo (Ej: BTC o AAPL)"
-            value={activo}
-            onChange={(e) => setActivo(e.target.value)}
+          <Select
+            options={activosDisponibles}
+            value={activosDisponibles.find(option => option.value === activo)}
+            onChange={(selectedOption) => setActivo(selectedOption?.value)}
+            placeholder="Selecciona un activo"
             className="border rounded-lg px-3 py-2"
           />
           <input
@@ -157,7 +156,6 @@ function App() {
             type="number"
             placeholder="Precio actual (en tiempo real)"
             value={precioReal || ""}
-            onChange={(e) => setPrecioActual(e.target.value)} // También puedes usar este campo para editar manualmente
             className="border rounded-lg px-3 py-2"
             disabled
           />
