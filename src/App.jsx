@@ -1,5 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from "react";
+import axios from "axios";  // Importamos Axios para hacer solicitudes HTTP
 import {
   LineChart,
   Line,
@@ -17,18 +18,22 @@ function App() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioActual, setPrecioActual] = useState("");
   const [historial, setHistorial] = useState([]);
+  
+  // Estado para el precio en tiempo real
+  const [precioReal, setPrecioReal] = useState(null);
 
+  // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioActual) return;
+    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
 
     const nuevaInversion = {
       id: Date.now(),
       activo,
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
-      precioActual: parseFloat(precioActual),
+      precioActual: precioReal, // Usamos el precio en tiempo real
     };
 
     setInversiones([nuevaInversion, ...inversiones]);
@@ -49,15 +54,45 @@ function App() {
     0
   );
 
+  // Hook para obtener el precio en tiempo real del activo
   useEffect(() => {
-    if (totalActual > 0) {
-      setHistorial((prev) => [
-        ...prev,
-        { fecha: new Date().toLocaleTimeString(), valor: totalActual },
-      ]);
-    }
-  }, [totalActual]);
+    if (!activo) return;
 
+    const obtenerPrecio = async () => {
+      try {
+        // Si el activo es una criptomoneda, usamos CoinGecko
+        if (activo.toLowerCase() === 'bitcoin' || activo.toLowerCase() === 'ethereum') {
+          const response = await axios.get(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${activo.toLowerCase()}&vs_currencies=eur`
+          );
+          if (response.data[activo.toLowerCase()]) {
+            setPrecioReal(response.data[activo.toLowerCase()].eur);
+          }
+        }
+        // Si el activo es una acción, usamos Alpha Vantage
+        else {
+          const apiKey = 'E4OBOBOW3O2MLDYI'; // Pon tu clave de API de Alpha Vantage aquí
+          const response = await axios.get(
+            `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${activo.toUpperCase()}&interval=5min&apikey=${apiKey}`
+          );
+          const data = response.data['Time Series (5min)'];
+          const latestTime = Object.keys(data)[0];
+          const latestClose = data[latestTime]['4. close'];
+          setPrecioReal(parseFloat(latestClose));
+        }
+      } catch (error) {
+        console.error("Error al obtener el precio real:", error);
+      }
+    };
+
+    obtenerPrecio();
+
+    // Actualizar cada 60 segundos
+    const intervalo = setInterval(obtenerPrecio, 60000);
+    return () => clearInterval(intervalo); // Limpiamos el intervalo al desmontar el componente
+  }, [activo]); // Solo se ejecuta cuando cambia el activo
+
+  // Función para exportar a CSV
   const exportarCSV = () => {
     const headers = ["Activo", "Cantidad", "PrecioCompra", "PrecioActual"];
     const rows = inversiones.map((inv) => [
@@ -84,17 +119,12 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
       <div className="bg-white p-6 rounded-2xl shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          Cartera de Inversiones
-        </h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">Cartera de Inversiones</h1>
 
-        <form
-          onSubmit={registrarInversion}
-          className="flex flex-col gap-4 mb-6"
-        >
+        <form onSubmit={registrarInversion} className="flex flex-col gap-4 mb-6">
           <input
             type="text"
-            placeholder="Activo (Ej: BTC)"
+            placeholder="Activo (Ej: BTC o AAPL)"
             value={activo}
             onChange={(e) => setActivo(e.target.value)}
             className="border rounded-lg px-3 py-2"
@@ -115,10 +145,11 @@ function App() {
           />
           <input
             type="number"
-            placeholder="Precio actual"
-            value={precioActual}
-            onChange={(e) => setPrecioActual(e.target.value)}
+            placeholder="Precio actual (en tiempo real)"
+            value={precioReal || ""}
+            onChange={(e) => setPrecioActual(e.target.value)} // También puedes usar este campo para editar manualmente
             className="border rounded-lg px-3 py-2"
+            disabled
           />
           <button
             type="submit"
@@ -211,4 +242,4 @@ function App() {
   );
 }
 
-export default App;
+export default
