@@ -1,22 +1,6 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "package.json",
-        "use": "@vercel/node"
-      },
-      {
-        "src": "vite.config.js",
-        "use": "@vercel/node"
-      },
-      {
-        "src": "src/**/*.js",
-        "use": "@vercel/node"
-      }
-    ],
-    "env": {
-      "NODE_VERSION": "16.x"
-    },
-    "outputDirectory": "dist"
-  }
-  
+  "builds": [],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
