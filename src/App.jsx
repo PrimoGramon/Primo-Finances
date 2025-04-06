@@ -67,6 +67,9 @@ function App() {
           );
           if (response.data[activo.toLowerCase()]) {
             setPrecioReal(response.data[activo.toLowerCase()].eur);
+          } else {
+            setPrecioReal(null);
+            alert(`No se encontró el precio para la criptomoneda ${activo}`);
           }
         }
         // Si el activo es una acción, usamos Alpha Vantage
@@ -75,13 +78,20 @@ function App() {
           const response = await axios.get(
             `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${activo.toUpperCase()}&interval=5min&apikey=${apiKey}`
           );
-          const data = response.data['Time Series (5min)'];
-          const latestTime = Object.keys(data)[0];
-          const latestClose = data[latestTime]['4. close'];
-          setPrecioReal(parseFloat(latestClose));
+          if (response.data['Time Series (5min)']) {
+            const data = response.data['Time Series (5min)'];
+            const latestTime = Object.keys(data)[0];
+            const latestClose = data[latestTime]['4. close'];
+            setPrecioReal(parseFloat(latestClose));
+          } else {
+            setPrecioReal(null);
+            alert(`No se encontró el precio para la acción/fondo ${activo}`);
+          }
         }
       } catch (error) {
         console.error("Error al obtener el precio real:", error);
+        setPrecioReal(null);
+        alert("Hubo un problema al obtener el precio del activo.");
       }
     };
 
@@ -242,4 +252,4 @@ function App() {
   );
 }
 
-export default App;  // Aquí va el cierre correcto
+export default App;
