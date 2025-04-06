@@ -27,9 +27,7 @@ function App() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioReal, setPrecioReal] = useState(null);
   const [historial, setHistorial] = useState([]);
-  
-  // Estado para el precio en tiempo real
-  const [precio, setPrecio] = useState("");
+  const [tipoMovimiento, setTipoMovimiento] = useState("compra"); // Tipo de movimiento: compra o venta
   const [activoManual, setActivoManual] = useState(""); // Estado para permitir activos manuales
 
   // Función para registrar una inversión
@@ -45,15 +43,33 @@ function App() {
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
       precioActual: precioReal, // Usamos el precio en tiempo real
+      tipoMovimiento, // Tipo de movimiento: compra o venta
     };
 
-    setInversiones([nuevaInversion, ...inversiones]);
+    if (tipoMovimiento === "compra") {
+      // Si es compra, añadimos la cantidad a la inversión
+      setInversiones([nuevaInversion, ...inversiones]);
+    } else {
+      // Si es venta, restamos la cantidad de ese activo
+      setInversiones((prevInversiones) =>
+        prevInversiones.map((inv) =>
+          inv.activo === activo || inv.activo === activoManual
+            ? {
+                ...inv,
+                cantidad: inv.cantidad - parseFloat(cantidad),
+              }
+            : inv
+        )
+      );
+    }
 
+    // Limpiar campos después de registrar
     setActivo("");
     setActivoManual("");
     setCantidad("");
     setPrecioCompra("");
     setPrecioReal(null);
+    setTipoMovimiento("compra"); // Restablecer a compra después de la acción
   };
 
   const totalInvertido = inversiones.reduce(
@@ -72,7 +88,6 @@ function App() {
 
     const obtenerPrecio = async () => {
       try {
-        // Si el activo es una criptomoneda, usamos CoinGecko
         if (activo === 'bitcoin' || activo === 'ethereum') {
           const response = await axios.get(
             `https://api.coingecko.com/api/v3/simple/price?ids=${activo}&vs_currencies=eur`
@@ -80,9 +95,7 @@ function App() {
           if (response.data[activo]) {
             setPrecioReal(response.data[activo].eur);
           }
-        }
-        // Si el activo es una acción, usamos Alpha Vantage
-        else {
+        } else {
           const apiKey = 'E4OBOBOW3O2MLDYI'; // Pon tu clave de API de Alpha Vantage aquí
           const response = await axios.get(
             `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${activo.toUpperCase()}&interval=5min&apikey=${apiKey}`
@@ -96,16 +109,15 @@ function App() {
         }
       } catch (error) {
         console.error("Error al obtener el precio real:", error);
-        // Si no se encuentra el precio real en las APIs, dejar el precio en 0 o permitir la entrada manual.
-        setPrecioReal(0);
+        setPrecioReal(0); // Si hay error, poner el precio a 0
       }
     };
 
     obtenerPrecio();
 
-    const intervalo = setInterval(obtenerPrecio, 60000);
-    return () => clearInterval(intervalo);
-  }, [activo, activoManual]); // Se ejecuta cada vez que cambia el activo seleccionado
+    const intervalo = setInterval(obtenerPrecio, 60000); // Cada 60 segundos
+    return () => clearInterval(intervalo); // Limpiar intervalo cuando se desmonte el componente
+  }, [activo, activoManual]);
 
   // Función para exportar a CSV
   const exportarCSV = () => {
@@ -174,12 +186,21 @@ function App() {
             className="border rounded-lg px-3 py-2"
             disabled
           />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white rounded-lg py-2 font-semibold hover:bg-blue-700"
-          >
-            Registrar Inversión
-          </button>
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              className="bg-blue-600 text-white rounded-lg py-2 font-semibold hover:bg-blue-700"
+            >
+              Registrar Inversión
+            </button>
+            <button
+              type="button"
+              onClick={() => setTipoMovimiento(tipoMovimiento === "compra" ? "venta" : "compra")}
+              className="bg-yellow-600 text-white rounded-lg py-2 font-semibold hover:bg-yellow-700"
+            >
+              {tipoMovimiento === "compra" ? "Cambiar a Venta" : "Cambiar a Compra"}
+            </button>
+          </div>
         </form>
 
         <div className="mb-4">
@@ -241,9 +262,7 @@ function App() {
                   {valorActual.toFixed(2)} €
                   <br />
                   Proporción: {porcentaje}% |{" "}
-                  <span
-                    className={ganancia >= 0 ? "text-green-600" : "text-red-600"}
-                  >
+                  <span className={ganancia >= 0 ? "text-green-600" : "text-red-600"}>
                     {ganancia >= 0 ? "↑" : "↓"} {ganancia.toFixed(2)} €
                   </span>
                 </li>
