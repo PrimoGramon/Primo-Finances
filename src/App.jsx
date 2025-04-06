@@ -26,11 +26,11 @@ function App() {
   const [cantidad, setCantidad] = useState("");
   const [precioCompra, setPrecioCompra] = useState("");
   const [precioReal, setPrecioReal] = useState(null);
-  const [historial, setHistorial] = useState([]);  // Historial de movimientos
+  const [historial, setHistorial] = useState([]);
   const [tipoMovimiento, setTipoMovimiento] = useState("compra"); // Tipo de movimiento: compra o venta
   const [activoManual, setActivoManual] = useState(""); // Estado para permitir activos manuales
 
-  // Función para registrar una inversión o venta
+  // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
@@ -63,19 +63,20 @@ function App() {
       );
     }
 
-    // Calcular la ganancia o pérdida
-    const gananciaPerdida = (precioReal - precioCompra) * cantidad;
+    // Guardamos el movimiento en el historial
+    const ganancia = tipoMovimiento === "compra"
+      ? 0
+      : (parseFloat(precioReal) - parseFloat(precioCompra)) * parseFloat(cantidad);
     const nuevoMovimiento = {
-      id: Date.now(),
+      fecha: new Date().toLocaleString(),
       activo: activoManual || activo,
-      cantidad,
-      precioCompra,
-      precioActual: precioReal,
+      cantidad: parseFloat(cantidad),
+      precioCompra: parseFloat(precioCompra),
+      precioActual: parseFloat(precioReal),
+      ganancia,
       tipoMovimiento,
-      gananciaPerdida,
     };
 
-    // Añadir al historial de movimientos
     setHistorial([nuevoMovimiento, ...historial]);
 
     // Limpiar campos después de registrar
