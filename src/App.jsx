@@ -17,7 +17,7 @@ const activosDisponibles = [
   { value: 'ethereum', label: 'Ethereum (ETH)' },
   { value: 'aapl', label: 'Apple (AAPL)' },
   { value: 'msft', label: 'Microsoft (MSFT)' },
-  // Puedes añadir más activos aquí
+  // Puedes añadir más activos aquí si lo deseas
 ];
 
 function App() {
@@ -30,16 +30,18 @@ function App() {
   
   // Estado para el precio en tiempo real
   const [precio, setPrecio] = useState("");
+  const [activoManual, setActivoManual] = useState(""); // Estado para permitir activos manuales
 
   // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
+    if (!activo && !activoManual) return; // Debemos tener un activo, sea desde la búsqueda o manual
+    if (!cantidad || !precioCompra || !precioReal) return;
 
     const nuevaInversion = {
       id: Date.now(),
-      activo,
+      activo: activoManual || activo, // Usamos el activo manual si lo hay
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
       precioActual: precioReal, // Usamos el precio en tiempo real
@@ -48,9 +50,10 @@ function App() {
     setInversiones([nuevaInversion, ...inversiones]);
 
     setActivo("");
+    setActivoManual("");
     setCantidad("");
     setPrecioCompra("");
-    setPrecioReal("");
+    setPrecioReal(null);
   };
 
   const totalInvertido = inversiones.reduce(
@@ -65,7 +68,7 @@ function App() {
 
   // Hook para obtener el precio en tiempo real del activo
   useEffect(() => {
-    if (!activo) return;
+    if (!activo && !activoManual) return; // Si no tenemos activo, no hacemos nada
 
     const obtenerPrecio = async () => {
       try {
@@ -102,7 +105,7 @@ function App() {
 
     const intervalo = setInterval(obtenerPrecio, 60000);
     return () => clearInterval(intervalo);
-  }, [activo]);
+  }, [activo, activoManual]); // Se ejecuta cada vez que cambia el activo seleccionado
 
   // Función para exportar a CSV
   const exportarCSV = () => {
@@ -134,11 +137,20 @@ function App() {
         <h1 className="text-2xl font-bold mb-4 text-center">Cartera de Inversiones</h1>
 
         <form onSubmit={registrarInversion} className="flex flex-col gap-4 mb-6">
+          {/* Búsqueda dinámica para activos */}
           <Select
             options={activosDisponibles}
             value={activosDisponibles.find(option => option.value === activo)}
             onChange={(selectedOption) => setActivo(selectedOption?.value)}
             placeholder="Selecciona un activo"
+            className="border rounded-lg px-3 py-2"
+          />
+          {/* Campo de texto para ingresar manualmente el activo si no está listado */}
+          <input
+            type="text"
+            placeholder="O ingresa un activo manualmente"
+            value={activoManual}
+            onChange={(e) => setActivoManual(e.target.value)}
             className="border rounded-lg px-3 py-2"
           />
           <input
