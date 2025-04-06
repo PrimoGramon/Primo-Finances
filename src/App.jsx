@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";  // Importamos Axios para hacer solicitudes HTTP
 import Select from "react-select";  // Importamos React Select
@@ -18,7 +17,7 @@ const activosDisponibles = [
   { value: 'ethereum', label: 'Ethereum (ETH)' },
   { value: 'aapl', label: 'Apple (AAPL)' },
   { value: 'msft', label: 'Microsoft (MSFT)' },
-  // Añadir más activos aquí...
+  // Puedes añadir más activos aquí
 ];
 
 function App() {
@@ -141,7 +140,6 @@ function App() {
             onChange={(selectedOption) => setActivo(selectedOption?.value)}
             placeholder="Selecciona un activo"
             className="border rounded-lg px-3 py-2"
-            onInputChange={buscarActivos}  // Llama a la búsqueda mientras el usuario escribe
           />
           <input
             type="number"
@@ -177,11 +175,7 @@ function App() {
           <p>Total Invertido: {totalInvertido.toFixed(2)} €</p>
           <p>Valor Actual: {totalActual.toFixed(2)} €</p>
           <p
-            className={
-              totalActual - totalInvertido >= 0
-                ? "text-green-600"
-                : "text-red-600"
-            }
+            className={totalActual - totalInvertido >= 0 ? "text-green-600" : "text-red-600"}
           >
             {totalActual - totalInvertido >= 0 ? "Ganancia" : "Pérdida"}:{" "}
             {(totalActual - totalInvertido).toFixed(2)} €
@@ -236,9 +230,7 @@ function App() {
                   <br />
                   Proporción: {porcentaje}% |{" "}
                   <span
-                    className={
-                      ganancia >= 0 ? "text-green-600" : "text-red-600"
-                    }
+                    className={ganancia >= 0 ? "text-green-600" : "text-red-600"}
                   >
                     {ganancia >= 0 ? "↑" : "↓"} {ganancia.toFixed(2)} €
                   </span>
