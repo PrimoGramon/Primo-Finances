@@ -11,48 +11,14 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Lista de activos disponibles para sugerir (inicialmente vacía, se llenará más tarde)
-const [activosDisponibles, setActivosDisponibles] = useState([]);
-
-useEffect(() => {
-  const fetchActivos = async () => {
-    try {
-      // Obtener las 100 principales criptomonedas de CoinGecko
-      const cryptosResponse = await axios.get(
-        "https://api.coingecko.com/api/v3/coins/markets", 
-        {
-          params: {
-            vs_currency: "eur",
-            order: "market_cap_desc",
-            per_page: 100,
-            page: 1,
-          }
-        }
-      );
-
-      const cryptos = cryptosResponse.data.map(crypto => ({
-        value: crypto.id,
-        label: `${crypto.name} (${crypto.symbol.toUpperCase()})`,
-      }));
-
-      // Obtener las 500 principales empresas de Alpha Vantage
-      const apiKey = 'E4OBOBOW3O2MLDYI'; // Pon tu clave de API de Alpha Vantage aquí
-      const companiesResponse = await axios.get(
-        `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=&apikey=${apiKey}`
-      );
-      const companies = companiesResponse.data.bestMatches.map((company) => ({
-        value: company['1. symbol'],
-        label: `${company['1. symbol']} - ${company['2. name']}`,
-      }));
-
-      setActivosDisponibles([...cryptos, ...companies]);
-    } catch (error) {
-      console.error("Error al obtener los activos:", error);
-    }
-  };
-
-  fetchActivos();
-}, []); // Este efecto se ejecuta una sola vez al cargar la app
+// Lista de activos disponibles para sugerir (inicialmente vacía)
+const activosDisponibles = [
+  { value: 'bitcoin', label: 'Bitcoin (BTC)' },
+  { value: 'ethereum', label: 'Ethereum (ETH)' },
+  { value: 'aapl', label: 'Apple (AAPL)' },
+  { value: 'msft', label: 'Microsoft (MSFT)' },
+  // Puedes añadir más activos aquí
+];
 
 function App() {
   const [inversiones, setInversiones] = useState([]);
@@ -66,14 +32,14 @@ function App() {
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioReal) return;
+    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
 
     const nuevaInversion = {
       id: Date.now(),
       activo,
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
-      precioActual: precioReal,
+      precioActual: precioReal, // Usamos el precio en tiempo real
     };
 
     setInversiones([nuevaInversion, ...inversiones]);
