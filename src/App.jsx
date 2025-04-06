@@ -18,7 +18,7 @@ const activosDisponibles = [
   { value: 'ethereum', label: 'Ethereum (ETH)' },
   { value: 'aapl', label: 'Apple (AAPL)' },
   { value: 'msft', label: 'Microsoft (MSFT)' },
-  // Añadir más activos aquí
+  // Añadir más activos aquí...
 ];
 
 function App() {
@@ -26,23 +26,24 @@ function App() {
   const [activo, setActivo] = useState(""); // Cambiado para usar 'value' de react-select
   const [cantidad, setCantidad] = useState("");
   const [precioCompra, setPrecioCompra] = useState("");
-  const [precioActual, setPrecioActual] = useState("");
+  const [precioReal, setPrecioReal] = useState(null);
   const [historial, setHistorial] = useState([]);
   
-  const [precioReal, setPrecioReal] = useState(null);
+  // Estado para el precio en tiempo real
+  const [precio, setPrecio] = useState("");
 
   // Función para registrar una inversión
   const registrarInversion = (e) => {
     e.preventDefault();
 
-    if (!activo || !cantidad || !precioCompra || !precioReal) return;
+    if (!activo || !cantidad || !precioCompra || !precioReal) return; // Ahora usamos el precio real
 
     const nuevaInversion = {
       id: Date.now(),
       activo,
       cantidad: parseFloat(cantidad),
       precioCompra: parseFloat(precioCompra),
-      precioActual: precioReal,
+      precioActual: precioReal, // Usamos el precio en tiempo real
     };
 
     setInversiones([nuevaInversion, ...inversiones]);
@@ -50,7 +51,7 @@ function App() {
     setActivo("");
     setCantidad("");
     setPrecioCompra("");
-    setPrecioActual("");
+    setPrecioReal("");
   };
 
   const totalInvertido = inversiones.reduce(
@@ -93,6 +94,8 @@ function App() {
         }
       } catch (error) {
         console.error("Error al obtener el precio real:", error);
+        // Si no se encuentra el precio real en las APIs, dejar el precio en 0 o permitir la entrada manual.
+        setPrecioReal(0);
       }
     };
 
@@ -102,6 +105,7 @@ function App() {
     return () => clearInterval(intervalo);
   }, [activo]);
 
+  // Función para exportar a CSV
   const exportarCSV = () => {
     const headers = ["Activo", "Cantidad", "PrecioCompra", "PrecioActual"];
     const rows = inversiones.map((inv) => [
@@ -137,6 +141,7 @@ function App() {
             onChange={(selectedOption) => setActivo(selectedOption?.value)}
             placeholder="Selecciona un activo"
             className="border rounded-lg px-3 py-2"
+            onInputChange={buscarActivos}  // Llama a la búsqueda mientras el usuario escribe
           />
           <input
             type="number"
