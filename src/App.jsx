@@ -242,4 +242,4 @@ function App() {
   );
 }
 
-export default
+export default App;  // Aquí va el cierre correcto
