@@ -30,8 +30,8 @@ function App() {
   const [tipoMovimiento, setTipoMovimiento] = useState("compra"); // Tipo de movimiento: compra o venta
   const [activoManual, setActivoManual] = useState(""); // Estado para permitir activos manuales
 
-  // Función para registrar una inversión
-  const registrarInversion = (e) => {
+  // Función para registrar una inversión o venta
+  const registrarMovimiento = (e) => {
     e.preventDefault();
 
     if (!activo && !activoManual) return; // Debemos tener un activo, sea desde la búsqueda o manual
@@ -46,11 +46,14 @@ function App() {
       tipoMovimiento, // Tipo de movimiento: compra o venta
     };
 
+    // Si es compra, añadimos la inversión
     if (tipoMovimiento === "compra") {
-      // Si es compra, añadimos la cantidad a la inversión
       setInversiones([nuevaInversion, ...inversiones]);
-    } else {
-      // Si es venta, restamos la cantidad de ese activo
+      // Añadimos al historial con ganancia o pérdida
+      const ganancia = 0; // No hay ganancia o pérdida en una compra
+      setHistorial([...historial, { ...nuevaInversion, ganancia }]);
+    } else if (tipoMovimiento === "venta") {
+      // Si es venta, actualizamos las inversiones (restando la cantidad)
       setInversiones((prevInversiones) =>
         prevInversiones.map((inv) =>
           inv.activo === activo || inv.activo === activoManual
@@ -61,23 +64,10 @@ function App() {
             : inv
         )
       );
+      // Añadimos la venta al historial con la ganancia o pérdida calculada
+      const ganancia = (parseFloat(precioReal) - parseFloat(precioCompra)) * parseFloat(cantidad);
+      setHistorial([...historial, { ...nuevaInversion, ganancia }]);
     }
-
-    // Guardamos el movimiento en el historial
-    const ganancia = tipoMovimiento === "compra"
-      ? 0
-      : (parseFloat(precioReal) - parseFloat(precioCompra)) * parseFloat(cantidad);
-    const nuevoMovimiento = {
-      fecha: new Date().toLocaleString(),
-      activo: activoManual || activo,
-      cantidad: parseFloat(cantidad),
-      precioCompra: parseFloat(precioCompra),
-      precioActual: parseFloat(precioReal),
-      ganancia,
-      tipoMovimiento,
-    };
-
-    setHistorial([nuevoMovimiento, ...historial]);
 
     // Limpiar campos después de registrar
     setActivo("");
@@ -164,7 +154,7 @@ function App() {
       <div className="bg-white p-6 rounded-2xl shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-4 text-center">Cartera de Inversiones</h1>
 
-        <form onSubmit={registrarInversion} className="flex flex-col gap-4 mb-6">
+        <form onSubmit={registrarMovimiento} className="flex flex-col gap-4 mb-6">
           {/* Búsqueda dinámica para activos */}
           <Select
             options={activosDisponibles}
@@ -207,7 +197,7 @@ function App() {
               type="submit"
               className="bg-blue-600 text-white rounded-lg py-2 font-semibold hover:bg-blue-700"
             >
-              Registrar Inversión
+              Registrar Movimiento
             </button>
             <button
               type="button"
@@ -278,7 +268,9 @@ function App() {
                   {valorActual.toFixed(2)} €
                   <br />
                   Proporción: {porcentaje}% |{" "}
-                  <span className={ganancia >= 0 ? "text-green-600" : "text-red-600"}>
+                  <span
+                    className={ganancia >= 0 ? "text-green-600" : "text-red-600"}
+                  >
                     {ganancia >= 0 ? "↑" : "↓"} {ganancia.toFixed(2)} €
                   </span>
                 </li>
